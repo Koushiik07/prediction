@@ -1,0 +1,66 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+import warnings
+
+warnings.filterwarnings('ignore')
+
+# Load the dataset
+dataset = pd.read_csv("/content/heart.csv")
+dataset.info()
+dataset.describe()
+
+# Prepare data (Assuming 'target' is the target variable)
+X = dataset.drop(columns='target')
+y = dataset['target']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+
+# Standardize the data (optional depending on models used)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# 1. Support Vector Classifier (SVC)
+svc = SVC(kernel='linear', random_state=0)
+svc.fit(X_train, y_train)
+svc_score = svc.score(X_test, y_test)
+print(f"The score for Support Vector Classifier is {svc_score * 100:.2f}% with 'linear' kernel.")
+
+# 2. Decision Tree Classifier - Evaluate with different 'max_features'
+dt_scores = []
+for i in range(1, len(X.columns) + 1):
+    dt_classifier = DecisionTreeClassifier(max_features=i, random_state=0)
+    dt_classifier.fit(X_train, y_train)
+    dt_scores.append(dt_classifier.score(X_test, y_test))
+
+# Plot the Decision Tree Classifier scores for different max_features
+plt.plot(range(1, len(X.columns) + 1), dt_scores, color='green')
+for i in range(1, len(X.columns) + 1):
+    plt.text(i, dt_scores[i-1], f"({i}, {dt_scores[i-1]:.2f})")
+
+plt.xticks(range(1, len(X.columns) + 1))
+plt.xlabel('Max features')
+plt.ylabel('Scores')
+plt.title('Decision Tree Classifier scores for different number of maximum features')
+plt.show()
+
+# Print the best score and corresponding features
+best_dt_score = max(dt_scores)
+best_max_features = dt_scores.index(best_dt_score) + 1  # index starts from 0, so +1 to match feature count
+print(f"The score for Decision Tree Classifier is {best_dt_score * 100:.2f}% with {best_max_features} maximum features.")
+
+# 3. Correlation Heatmap
+rcParams['figure.figsize'] = 20, 14
+plt.matshow(dataset.corr(), cmap='rainbow')
+plt.colorbar()
+plt.yticks(np.arange(dataset.shape[1]), dataset.columns)
+plt.title('Correlation Heatmap')
+plt.show()
